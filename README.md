@@ -2,6 +2,21 @@
 
 A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
 
+## Adding an app
+
+Every folder in `apps/` is an app on the desktop. Drop one in and it appears in the dock, launcher and desktop — no registration needed.
+
+```
+apps/
+  my-app/
+    page.tsx      # default export renders the app (loaded on first open)
+    favicon.ico   # app icon; without one, a coloured letter tile is used
+    layout.tsx    # optional: export `metadata = { title }` to name the app,
+                  # default export wraps the page like a Next.js layout
+```
+
+Without a `metadata.title`, the folder name is used (`my-app` → "My App"). Each app also runs standalone at `/apps/<folder>`.
+
 ## Prerequisites
 
 - Node.js `>=22.13.0`
