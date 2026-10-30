@@ -1,0 +1,55 @@
+.ft-edit-toolbar { display: flex; gap: 7px; padding: 0 25px 12px; flex-shrink: 0; }
+.ft-edit-toolbar button,.ft-person-actions button,.ft-form-actions button,.ft-empty button { display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid #bca97735; border-radius: 4px; background: #bca9770a; color: #d3c69c; padding: 7px 10px; font-size: 10px; }
+.ft-edit-toolbar button:hover,.ft-person-actions button:hover { background: #bca9771a; }
+.ft-edit-toolbar .ft-export-button { margin-left: auto; background: #bca97720; }
+.ft-editor .ft-header { padding-top: 17px; padding-bottom: 14px; }
+.ft-editor .ft-intro { display: none; }
+.ft-editor .ft-person strong { font-size: 12px; line-height: 1.2; margin-top: 6px; max-width: 100%; overflow-wrap: anywhere; }
+.ft-editor .ft-person small { font-size: 9px; max-width: 100%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+.ft-editor .ft-person .ft-portrait { height: 94px; }
+.ft-editor .ft-family-caption { font-size: 13px; letter-spacing: .1em; overflow-wrap: anywhere; }
+.ft-edit-links text { font: 10px Arial,sans-serif; fill: #d2c395; paint-order: stroke; stroke: #101510; stroke-width: 3px; }
+.ft-edit-links .ft-cross-family path { stroke: #9cbfc2; }
+.ft-edit-links .ft-active-edge path { stroke-width: 2.2; filter: drop-shadow(0 0 3px #c9ba8050); }
+.ft-edit-links .ft-active-edge text { fill: #f2dda1; font-weight: 700; }
+.ft-map-heading button { display: flex; gap: 3px; align-items: center; border: 0; background: transparent; color: #a7c6c9; font-size: 8px; padding: 0; text-align: right; }
+.ft-legend .ft-cross-legend { border-color: #9cbfc2; margin-left: 7px; }
+.ft-person-actions { display: flex; gap: 6px; margin-bottom: 13px; }
+.ft-person-actions > button:first-child { flex: 1; }
+.ft-danger { color: #e0a08d !important; border-color: #d28c7540 !important; }
+.ft-relations .ft-add-link { font-size: 9px; color: #d0be8b; justify-content: center; border: 1px dashed #bca97740; border-radius: 4px; margin: 12px 0 5px; }
+.ft-connection-row { display: flex; align-items: center; gap: 3px; border-bottom: 1px solid #ffffff08; }
+.ft-relations .ft-connection-row button { border: 0; width: auto; flex-shrink: 0; justify-content: center; padding: 7px 3px; color: #b6bdab; }
+.ft-relations .ft-connection-row .ft-connection-person { flex: 1; min-width: 0; text-align: left; justify-content: start; padding: 9px 0; }
+.ft-connection-person > span:last-child { min-width: 0; }
+.ft-connection-person strong { overflow-wrap: anywhere; }
+.ft-edge-number { font-size: 8px; color: #d3c18b; border: 1px solid #bca97730; border-radius: 3px; min-width: 17px; text-align: center; padding: 2px; }
+.ft-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 18px; background: #28301e; color: #d4cca9; font-size: 10px; flex-shrink: 0; }
+.ft-status button { border: 0; background: transparent; color: inherit; display: grid; place-items: center; }
+.ft-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #b7bea5; padding: 20px; text-align: center; z-index: 1; }
+.ft-empty h2 { font: 24px Georgia,serif; margin: 14px 0 0; }
+.ft-empty p { font-size: 11px; }
+.ft-empty button { cursor: pointer; }
+.ft-dialog { padding: 0; width: min(440px,calc(100vw - 32px)); max-height: min(740px,calc(100dvh - 48px)); border: 1px solid #bca97755; border-radius: 10px; background: #182016; color: #e8e7dd; box-shadow: 0 30px 90px #0009; margin: auto; font-family: inherit; scrollbar-width: thin; }
+.ft-dialog::backdrop { background: #020602b5; backdrop-filter: blur(6px); }
+.ft-dialog-inner { padding: 24px; }
+.ft-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.ft-dialog h2 { font: 400 25px Georgia,serif; margin: 0; }
+.ft-dialog header > button { border: 0; background: transparent; color: #c6cbb9; padding: 4px; cursor: pointer; }
+.ft-dialog label { display: flex; flex-direction: column; gap: 7px; margin: 14px 0 0; color: #c5cbb6; font-size: 11px; }
+.ft-dialog input,.ft-dialog select,.ft-dialog textarea { background: #0e150d; color: #eeeade; border: 1px solid #bca97740; border-radius: 4px; padding: 10px; width: 100%; font: inherit; font-size: 13px; }
+.ft-dialog input:focus,.ft-dialog select:focus,.ft-dialog textarea:focus { outline: 1px solid #bca977; }
+.ft-dialog textarea { resize: vertical; }
+.ft-dialog .ft-form-hint { font-size: 11px; line-height: 1.7; color: #a5ae96; margin: 10px 0; }
+.ft-dialog p { font-size: 13px; line-height: 1.7; }
+.ft-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 23px; }
+.ft-form-actions button { cursor: pointer; font-size: 12px; padding: 10px 13px; }
+.ft-form-actions .ft-primary { background: #bca977; color: #182016; }
+.ft-dialog .ft-error { color: #eab09a; font-size: 12px; }
+.ft-export-options { display: flex; flex-direction: column; gap: 9px; margin-top: 20px; }
+.ft-export-options button { text-align: left; display: flex; flex-direction: column; gap: 6px; border: 1px solid #bca97740; background: #bca9770a; border-radius: 5px; padding: 14px; color: #e0d4ae; cursor: pointer; }
+.ft-export-options button:hover { background: #bca97720; }
+.ft-export-options small { color: #a5ae96; }
+.ft-export-options button:disabled { opacity: .5; cursor: wait; }
+@container (max-width: 650px) { .ft-edit-toolbar { padding: 0 16px 10px; gap: 5px; flex-wrap: wrap; } .ft-edit-toolbar button { padding: 7px; font-size: 9px; } }
+@container (max-width: 480px) { .ft-edit-toolbar { gap: 5px; } .ft-edit-toolbar button { flex: 1 1 42%; } .ft-map-heading { padding: 13px 12px 0; } .ft-map-heading button { max-width: 50%; font-size: 7px; } .ft-status { font-size: 9px; padding: 7px 12px; } }

@@ -1,9 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { AnimatePresence, motion, useAnimate, useMotionValue, useSpring, useTransform, type MotionValue } from "motion/react";
-import { Command, Maximize2, Minus, Moon, Search, Sun, X } from "lucide-react";
+import { AnimatePresence, MotionConfig, motion, useAnimate, useMotionValue, useSpring, useTransform, type MotionValue } from "motion/react";
+import { Command, Maximize2, Minus, Moon, Pause, Play, Search, Sun, X } from "lucide-react";
 import { AppIcon, apps, appsById } from "@/lib/app-registry";
+import CinematicBackground from "./cinematic-background";
 
 type AppId = string;
 
@@ -15,16 +16,22 @@ const MENU_BAR = 34, MIN_W = 420, MIN_H = 300;
 const spring = { type: "spring", stiffness: 380, damping: 34, mass: .9 } as const;
 const genie = { type: "spring", stiffness: 260, damping: 30 } as const;
 
-function LoadingApp() { return <div className="app-loading" aria-label="Loading app"><span/><span/><span/></div>; }
+function LoadingApp() { return <div className="app-loading" aria-label="Loading app"><span /><span /><span /></div>; }
 const formatTime = () => new Intl.DateTimeFormat("en", { weekday: "short", hour: "numeric", minute: "2-digit" }).format(new Date());
 
-function DockIcon({ mouseX, bounce, iconRef, children, ...props }: { mouseX: MotionValue<number>; bounce?: number; iconRef?: (el: HTMLElement | null) => void; children: React.ReactNode } & Omit<React.ComponentProps<typeof motion.button>, "children">) {
+function DockIcon({ mouseX, bounce, still, iconRef, children, ...props }: { mouseX: MotionValue<number>; bounce?: number; still?: boolean; iconRef?: (el: HTMLElement | null) => void; children: React.ReactNode } & Omit<React.ComponentProps<typeof motion.button>, "children">) {
   const [scope, animate] = useAnimate<HTMLButtonElement>();
   const distance = useTransform(mouseX, x => { const box = scope.current?.getBoundingClientRect(); return box ? x - box.x - box.width / 2 : Infinity; });
   const size = useSpring(useTransform(distance, [-150, 0, 150], [48, 74, 48]), { stiffness: 420, damping: 28, mass: .2 });
-  useEffect(() => { if (bounce) animate(scope.current, { y: [0, -26, 0, -12, 0] }, { duration: .75, ease: "easeOut" }); }, [bounce, animate, scope]);
+  useEffect(() => {
+    if (bounce && !still) {
+      const playback = animate(scope.current, { y: [0, -12, 0] }, { duration: .65, ease: "easeInOut" });
+      return () => { playback.stop(); };
+    }
+    if (still) animate(scope.current, { y: 0 }, { duration: 0 });
+  }, [bounce, still, animate, scope]);
   useEffect(() => { iconRef?.(scope.current); });
-  return <motion.button ref={scope} style={{ width: size, height: size }} {...props}>{children}</motion.button>;
+  return <motion.button ref={scope} style={{ width: still ? 48 : size, height: still ? 48 : size }} {...props}>{children}</motion.button>;
 }
 
 export default function Home() {
@@ -32,7 +39,11 @@ export default function Home() {
   const [stack, setStack] = useState<AppId[]>([]); // open windows, back to front
   const [focused, setFocused] = useState<AppId | null>(null);
   const [selectedIcon, setSelectedIcon] = useState<AppId | null>(null);
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
+  const [motionPaused, setMotionPaused] = useState(false);
+  const still = motionPaused || !!prefersReducedMotion;
+  const [sceneCue, setSceneCue] = useState(0);
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [now, setNow] = useState(formatTime);
   const [viewport, setViewport] = useState({ w: 1440, h: 900 });
@@ -42,6 +53,13 @@ export default function Home() {
   const dockIcons = useRef<Partial<Record<AppId, HTMLElement | null>>>({});
   const windowEls = useRef<Partial<Record<AppId, HTMLElement | null>>>({});
   const dockMouseX = useMotionValue(Infinity);
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncPreference = () => setPrefersReducedMotion(preference.matches);
+    syncPreference();
+    preference.addEventListener("change", syncPreference);
+    return () => preference.removeEventListener("change", syncPreference);
+  }, []);
   useEffect(() => { const timer = setInterval(() => setNow(formatTime()), 15000); return () => clearInterval(timer); }, []);
   useEffect(() => {
     const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
@@ -68,6 +86,7 @@ export default function Home() {
   function focus(id: AppId) { if (focused !== id || stack.at(-1) !== id) { setStack(s => [...s.filter(item => item !== id), id]); setFocused(id); } }
   function nextFocus(exclude: AppId) { return [...stack].reverse().find(id => id !== exclude && windows[id] && !windows[id].minimized) ?? null; }
   function launch(id: AppId) {
+    setSceneCue(value => value + 1);
     const existing = windows[id];
     if (existing) update(id, win => ({ ...win, minimized: false }));
     else {
@@ -104,49 +123,54 @@ export default function Home() {
   const dragHandlers = { onPointerMove: onDrag, onPointerUp: endDrag, onPointerCancel: endDrag };
 
   return (
-    <main className={dark ? "desktop dark" : "desktop"} onPointerDown={event => { if (event.target === event.currentTarget) { setFocused(null); setSelectedIcon(null); setLauncherOpen(false); } }}>
-      <div className="wallpaper-glow glow-one"/><div className="wallpaper-glow glow-two"/><div className="wallpaper-glow glow-three"/>
+    <MotionConfig reducedMotion={still ? "always" : "user"}>
+    <main className={`${dark ? "desktop dark" : "desktop"}${still ? " motion-paused" : ""}`} onPointerDown={event => { if (event.target === event.currentTarget) { setFocused(null); setSelectedIcon(null); setLauncherOpen(false); } }}>
+      <CinematicBackground paused={still} dark={dark} focused={!!focused || launcherOpen} cue={sceneCue} />
+      <div className="wallpaper-atmosphere" aria-hidden="true"><div className="time-ring ring-outer" /><div className="time-ring ring-inner" /></div>
+      <div className="cinematic-reveal" aria-hidden="true" />
       <header className="menu-bar glass">
-        <div className="menu-left"><button className="brand-mark" onClick={() => setLauncherOpen(v => !v)} aria-label="Open app launcher"><Command size={17}/></button><AnimatePresence mode="popLayout" initial={false}><motion.strong key={focused ?? "desktop"} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: .16 }}>{focused ? appsById[focused].name : "Workspace"}</motion.strong></AnimatePresence><span className="menu-link">File</span><span className="menu-link">Edit</span><span className="menu-link">View</span><span className="menu-link">Window</span></div>
-        <div className="menu-right"><motion.button whileTap={{ scale: .85, rotate: -20 }} onClick={() => setDark(v => !v)} aria-label="Toggle theme">{dark ? <Sun size={15}/> : <Moon size={15}/>}</motion.button><span suppressHydrationWarning>{now}</span><span className="avatar">US</span></div>
+        <div className="menu-left"><button className="brand-mark" onClick={() => setLauncherOpen(v => !v)} aria-label="Open app launcher"><Command size={17} /></button><AnimatePresence mode="popLayout" initial={false}><motion.strong key={focused ?? "desktop"} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: .16 }}>{focused ? appsById[focused].name : "Workspace"}</motion.strong></AnimatePresence><span className="menu-link">File</span><span className="menu-link">Edit</span><span className="menu-link">View</span><span className="menu-link">Window</span></div>
+        <div className="menu-right"><button onClick={() => setMotionPaused(v => !v)} disabled={!!prefersReducedMotion} aria-label={prefersReducedMotion ? "Reduced motion enabled by system" : motionPaused ? "Resume motion" : "Pause motion"} aria-pressed={still} title={prefersReducedMotion ? "Reduced motion enabled by system" : motionPaused ? "Resume motion" : "Pause motion"}>{still ? <Play size={13} /> : <Pause size={13} />}</button><motion.button whileTap={{ scale: .85, rotate: -20 }} onClick={() => setDark(v => !v)} aria-label="Toggle theme">{dark ? <Sun size={15} /> : <Moon size={15} />}</motion.button><span suppressHydrationWarning>{now}</span><span className="avatar">US</span></div>
       </header>
-      <div className="desktop-icons">{apps.map(app => { const id = app.id; return <motion.button key={id} whileTap={{ scale: .94 }} className={selectedIcon === id ? "selected" : ""} onClick={() => { setSelectedIcon(id); setFocused(null); }} onDoubleClick={() => launch(id)} onKeyDown={event => event.key === "Enter" && launch(id)} aria-label={`Open ${app.name}`}><AppIcon app={app}/><small>{app.name}</small></motion.button>; })}</div>
+      <div className="desktop-icons">{apps.map(app => { const id = app.id; return <motion.button key={id} whileTap={{ scale: .94 }} className={selectedIcon === id ? "selected" : ""} onClick={() => { setSelectedIcon(id); setFocused(null); }} onDoubleClick={() => launch(id)} onKeyDown={event => event.key === "Enter" && launch(id)} aria-label={`Open ${app.name}`}><AppIcon app={app} /><small>{app.name}</small></motion.button>; })}</div>
       <div className="window-layer">
         <AnimatePresence>
           {apps.filter(app => windows[app.id]).map(app => {
             const id = app.id, win = windows[id]!, App = app.component;
             const className = ["window", "glass", focused === id && "window-focused", win.maximized && "window-max", win.minimized && "window-min"].filter(Boolean).join(" ");
             const frame = win.maximized ? { left: 8, top: MENU_BAR + 8, width: viewport.w - 16, height: viewport.h - MENU_BAR - 16 } : { left: win.x, top: win.y, width: win.w, height: win.h };
-            const intoDock = { x: win.dock.x, y: win.dock.y, scale: .06, opacity: 0, filter: "blur(6px)" };
+            const intoDock = { x: still ? 0 : win.dock.x, y: still ? 0 : win.dock.y, scale: still ? 1 : .06, opacity: 0, filter: still ? "none" : "blur(6px)" };
             return (
               <motion.section key={id} ref={el => { windowEls.current[id] = el; }} className={className} style={{ zIndex: stack.indexOf(id) + 1, transformOrigin: "50% 50%" }}
-                initial={{ ...intoDock, ...frame }}
+                initial={{ x: 0, y: still ? 0 : 20, scale: still ? 1 : .96, opacity: 0, filter: still ? "none" : "blur(12px)", ...frame }}
                 animate={win.minimized ? { ...intoDock, ...frame, transitionEnd: { visibility: "hidden" } } : { x: 0, y: 0, scale: 1, opacity: 1, filter: "blur(0px)", visibility: "visible", ...frame }}
-                exit={{ scale: .9, opacity: 0, filter: "blur(4px)", transition: { duration: .18, ease: [.4, 0, 1, 1] } }}
-                transition={{ ...genie, left: dragging ? { duration: 0 } : spring, top: dragging ? { duration: 0 } : spring, width: dragging ? { duration: 0 } : spring, height: dragging ? { duration: 0 } : spring, opacity: { duration: .22 } }}
+                exit={{ scale: still ? 1 : .98, opacity: 0, filter: still ? "none" : "blur(8px)", transition: { duration: still ? 0 : .28, ease: [.4, 0, 1, 1] } }}
+                transition={still ? { duration: 0 } : { ...genie, scale: { duration: .65, ease: [.16, 1, .3, 1] }, filter: { duration: .6 }, left: dragging ? { duration: 0 } : spring, top: dragging ? { duration: 0 } : spring, width: dragging ? { duration: 0 } : spring, height: dragging ? { duration: 0 } : spring, opacity: { duration: .4 } }}
                 onPointerDown={() => focus(id)} aria-label={`${app.name} window`} aria-hidden={win.minimized}>
                 <div className="title-bar" onPointerDown={event => startDrag(event, id, "move")} onDoubleClick={event => !(event.target as HTMLElement).closest("button") && toggleMaximize(id)} {...dragHandlers}>
-                  <div className="traffic-lights"><button className="traffic close" onClick={() => close(id)} aria-label="Close window"><X size={9}/></button><button className="traffic minimize" onClick={() => minimize(id)} aria-label="Minimize window"><Minus size={9}/></button><button className="traffic maximize" onClick={() => toggleMaximize(id)} aria-label="Maximize window"><Maximize2 size={8}/></button></div>
-                  <div className="window-title"><AppIcon app={app}/>{app.name}</div>
+                  <div className="traffic-lights"><button className="traffic close" onClick={() => close(id)} aria-label="Close window"><X size={9} /></button><button className="traffic minimize" onClick={() => minimize(id)} aria-label="Minimize window"><Minus size={9} /></button><button className="traffic maximize" onClick={() => toggleMaximize(id)} aria-label="Maximize window"><Maximize2 size={8} /></button></div>
+                  <div className="window-title"><AppIcon app={app} />{app.name}</div>
                 </div>
-                <div className="app-viewport"><Suspense fallback={<LoadingApp/>}><App/></Suspense></div>
-                <div className="resize-handle" onPointerDown={event => startDrag(event, id, "resize")} {...dragHandlers}/>
+                <div className="app-viewport"><Suspense fallback={<LoadingApp />}><App /></Suspense></div>
+                <div className="resize-handle" onPointerDown={event => startDrag(event, id, "resize")} {...dragHandlers} />
               </motion.section>
             );
           })}
         </AnimatePresence>
       </div>
       <AnimatePresence>
-        {launcherOpen && <motion.div className="launcher glass" role="dialog" aria-label="App launcher" initial={{ opacity: 0, scale: .92, filter: "blur(10px)" }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, scale: .95, filter: "blur(8px)", transition: { duration: .14 } }} transition={spring}>
-          <div className="launcher-search"><Search size={16}/><span>Jump to an app</span><kbd>⌘ K</kbd></div>
-          <div className="launcher-grid">{apps.map((app, index) => { const id = app.id; return <motion.button key={id} onClick={() => launch(id)} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: .03 * index }} whileHover={{ y: -3 }} whileTap={{ scale: .94 }}><AppIcon app={app}/><strong>{app.name}</strong><small>{windows[id] ? "Running" : "Open"}</small></motion.button>; })}</div>
+        {launcherOpen && <motion.div key="launcher-backdrop" className="launcher-backdrop" aria-hidden="true" onPointerDown={() => setLauncherOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: still ? 0 : .4 }} />}
+        {launcherOpen && <motion.div key="launcher" className="launcher glass" role="dialog" aria-label="App launcher" initial={{ opacity: 0, scale: still ? 1 : .97, filter: still ? "none" : "blur(12px)" }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, scale: still ? 1 : .98, filter: still ? "none" : "blur(8px)", transition: { duration: still ? 0 : .25 } }} transition={{ duration: still ? 0 : .55, ease: [.16, 1, .3, 1] }}>
+          <div className="launcher-search"><Search size={16} /><span>Jump to an app</span><kbd>⌘ K</kbd></div>
+          <div className="launcher-grid">{apps.map((app, index) => { const id = app.id; return <motion.button key={id} onClick={() => launch(id)} initial={{ opacity: 0, y: still ? 0 : 12 }} animate={{ opacity: 1, y: 0 }} transition={still ? { duration: 0 } : { duration: .5, delay: .06 * index, ease: [.16, 1, .3, 1] }} whileHover={{ y: still ? 0 : -3 }} whileTap={{ scale: still ? 1 : .94 }}><AppIcon app={app} /><strong>{app.name}</strong><small>{windows[id] ? "Running" : "Open"}</small></motion.button>; })}</div>
         </motion.div>}
       </AnimatePresence>
       <nav className="dock glass" aria-label="Applications" onMouseMove={event => dockMouseX.set(event.clientX)} onMouseLeave={() => dockMouseX.set(Infinity)}>
-        {apps.map(app => { const id = app.id; return <DockIcon key={id} mouseX={dockMouseX} bounce={bounces[id]} iconRef={el => { dockIcons.current[id] = el; }} onClick={() => launch(id)} aria-label={app.name} title={app.name}><AppIcon app={app}/><AnimatePresence>{windows[id]&&<motion.i initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}/>}</AnimatePresence></DockIcon>; })}
-        <div className="dock-divider"/>
-        <DockIcon mouseX={dockMouseX} onClick={() => setLauncherOpen(v=>!v)} aria-label="All apps" title="All apps"><span className="launchpad"><span/><span/><span/><span/></span></DockIcon>
+        {apps.map(app => { const id = app.id; return <DockIcon key={id} mouseX={dockMouseX} still={still} bounce={bounces[id]} iconRef={el => { dockIcons.current[id] = el; }} onClick={() => launch(id)} aria-label={app.name} title={app.name}><AppIcon app={app} /><AnimatePresence>{windows[id] && <motion.i initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} />}</AnimatePresence></DockIcon>; })}
+        <div className="dock-divider" />
+        <DockIcon mouseX={dockMouseX} still={still} onClick={() => setLauncherOpen(v => !v)} aria-label="All apps" title="All apps"><span className="launchpad"><span /><span /><span /><span /></span></DockIcon>
       </nav>
     </main>
+    </MotionConfig>
   );
 }

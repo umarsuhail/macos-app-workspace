@@ -1,0 +1,52 @@
+.desktop { color: var(--ink); }
+.cinematic-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.8s ease;
+}
+.cinematic-canvas[data-ready="true"] { opacity: 1; }
+.desktop .wallpaper-atmosphere { box-shadow: inset 0 0 140px 30px #0005; }
+.desktop .time-ring { opacity: .35; animation: orbit-breathe 24s ease-in-out infinite alternate; }
+.desktop .ring-inner { animation-delay: -12s; animation-direction: alternate-reverse; }
+.cinematic-reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  background: #050806;
+  animation: scene-reveal 1.8s cubic-bezier(.2,.65,.3,1) both;
+}
+.launcher-backdrop {
+  position: absolute;
+  inset: 34px 0 0;
+  z-index: 8;
+  background: #03070580;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.desktop .window-focused.glass { box-shadow: 0 35px 110px #0009, 0 0 45px #b8a66e08, inset 0 1px 0 var(--glass-shine); }
+.desktop .tile { transition: filter .4s ease, box-shadow .4s ease; }
+.desktop .menu-right button:disabled { opacity: .5; }
+@keyframes scene-reveal { from { opacity: 1; } to { opacity: 0; visibility: hidden; } }
+@keyframes orbit-breathe {
+  from { transform: translate(-50%,-50%) rotate(-4deg) scale(.97); }
+  to { transform: translate(-50%,-50%) rotate(4deg) scale(1.03); }
+}
+.desktop.motion-paused .time-ring { animation-play-state: paused; }
+.desktop.motion-paused .cinematic-reveal { display: none; }
+.desktop.motion-paused .cinematic-canvas { transition: none; }
+@media (max-width: 480px) {
+  .desktop .dock button {
+    width: clamp(30px, 10vw, 44px) !important;
+    height: clamp(30px, 10vw, 44px) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .desktop .time-ring { animation: none; }
+  .cinematic-reveal { display: none; }
+  .cinematic-canvas { transition: none; }
+}
